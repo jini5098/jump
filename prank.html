@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>🎁 선물이 도착했어요</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{height:100%;overflow:hidden;background:#000;font-family:"Pretendard","Apple SD Gothic Neo",system-ui,sans-serif}
+#matrix{position:fixed;inset:0;z-index:0}
+.layer{position:fixed;inset:0;z-index:2;display:none;flex-direction:column}
+.layer.on{display:flex}
+
+/* 미끼 화면 */
+#bait{z-index:5;align-items:center;justify-content:center;text-align:center;padding:28px;
+  background:radial-gradient(130% 80% at 50% 0,#1b2a4a,#070b16 70%)}
+#bait .gift{font-size:92px;animation:float 2.4s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+#bait h1{color:#fff;font-size:27px;margin:18px 0 8px;font-weight:800}
+#bait p{color:#9fb0d6;font-size:15px;line-height:1.6;margin-bottom:28px}
+.open-btn{background:linear-gradient(135deg,#ffd23e,#ff9b2f);color:#3a2300;border:0;border-radius:16px;
+  padding:18px 44px;font-size:20px;font-weight:900;box-shadow:0 14px 40px rgba(255,180,40,.4);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.open-note{color:#5f6f93;font-size:12px;margin-top:20px}
+
+/* 해킹 화면 */
+#hack{background:rgba(0,0,0,.72);color:#2bff6a;font-family:"SF Mono",Menlo,Consolas,monospace;padding:18px 16px;gap:4px;overflow:hidden}
+#hack .bar-top{display:flex;justify-content:space-between;font-size:11px;color:#1f8f46;border-bottom:1px solid #113a22;padding-bottom:8px;margin-bottom:10px}
+#term{flex:1;overflow:hidden;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-all;text-shadow:0 0 6px rgba(43,255,106,.5)}
+#term .warn{color:#ff4d5e;text-shadow:0 0 6px rgba(255,77,94,.6)}
+#term .ok{color:#2bff6a}
+#term .dim{color:#1f8f46}
+#term .white{color:#dfffe9}
+.prog{height:14px;background:#06240f;border:1px solid #124c24;border-radius:3px;margin:5px 0;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2bff6a,#19c04f);transition:width .08s linear}
+.blink{animation:blink 1s step-end infinite}@keyframes blink{50%{opacity:0}}
+
+/* 경보 오버레이 */
+#alarm{z-index:7;background:rgba(120,0,0,.0);align-items:center;justify-content:center;text-align:center;pointer-events:none;transition:background .3s}
+#alarm.flash{background:rgba(150,0,0,.45)}
+#alarm .skull{font-size:120px;opacity:0;transition:.2s}
+#alarm.show .skull{opacity:1;animation:shake .4s infinite}
+@keyframes shake{0%,100%{transform:translate(0,0) rotate(0)}25%{transform:translate(-6px,3px) rotate(-4deg)}75%{transform:translate(6px,-3px) rotate(4deg)}}
+#alarm .granted{color:#ff2d4d;font-size:34px;font-weight:900;letter-spacing:3px;margin-top:10px;font-family:monospace;opacity:0}
+#alarm.show .granted{opacity:1;animation:blink .5s step-end infinite}
+
+/* 반전 */
+#reveal{z-index:9;align-items:center;justify-content:center;text-align:center;padding:28px;
+  background:radial-gradient(120% 80% at 50% 0,#17224a,#070b16 70%)}
+#reveal .emoji{font-size:110px;animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+#reveal h1{color:#fff;font-size:34px;font-weight:900;margin:16px 0 6px}
+#reveal p{color:#c6d2f0;font-size:17px;line-height:1.6;margin-bottom:26px}
+#reveal .safe{color:#3ddc84;font-size:13px;margin-top:8px}
+.again{background:linear-gradient(135deg,#22e0d6,#9b6bff);color:#06111a;border:0;border-radius:14px;padding:15px 30px;font-size:16px;font-weight:800;margin:6px}
+.share{background:#1b2340;color:#eaf0ff;border:1px solid #28304f;border-radius:14px;padding:15px 30px;font-size:16px;font-weight:700;margin:6px}
+.setup{position:fixed;top:10px;right:12px;z-index:10;color:#2a3357;font-size:12px;background:none;border:0;padding:6px}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+
+<!-- 1. 미끼 -->
+<section id="bait" class="layer on">
+  <div class="gift">🎁</div>
+  <h1 id="baitTitle">선물이 도착했어요!</h1>
+  <p id="baitDesc">친구가 보낸 깜짝 선물이에요.<br>아래 버튼을 눌러 확인하세요 👇</p>
+  <button class="open-btn" id="openBtn">선물 열기</button>
+  <div class="open-note">누르면 바로 확인할 수 있어요</div>
+</section>
+
+<!-- 2. 해킹 연출 -->
+<section id="hack" class="layer">
+  <div class="bar-top"><span id="barL">SYSTEM://connecting…</span><span id="barR">●REC</span></div>
+  <div id="term"></div>
+</section>
+
+<!-- 3. 경보 -->
+<section id="alarm" class="layer">
+  <div>
+    <div class="skull">💀</div>
+    <div class="granted">ACCESS GRANTED</div>
+  </div>
+</section>
+
+<!-- 4. 반전 -->
+<section id="reveal" class="layer">
+  <div class="emoji">😂</div>
+  <h1 id="revealTitle">속았지?!</h1>
+  <p id="revealDesc">걱정 마, 아무 일도 안 일어났어.<br>그냥 <b>장난</b>이야 ㅋㅋㅋ</p>
+  <div>
+    <button class="again" id="againBtn">🔁 다시 보기</button>
+    <button class="share" id="shareBtn">📤 친구에게 보내기</button>
+  </div>
+  <div class="safe">✓ 이 페이지는 네 폰에 아무 짓도 하지 않았어요. 진짜 해킹 아님.</div>
+</section>
+
+<button class="setup" id="setupBtn">⚙︎ 설정</button>
+
+<script>
+'use strict';
+/* =======================================================================
+   가짜 해킹 장난 페이지 — "연출"만 합니다.
+   이 페이지는 카메라·위치·연락처·파일에 전혀 접근하지 않고, 네트워크로
+   아무것도 보내지 않습니다. 화면에 뜨는 IP·위치·파일명은 전부 가짜(랜덤)예요.
+   마지막에 반드시 "장난이야" 반전이 나옵니다.
+
+   친구 이름 바꾸기: 주소 뒤에 ?name=민수  (예: .../prank.html?name=민수)
+   미끼 문구 바꾸기: ?bait=기프티콘  또는 설정(⚙︎) 버튼
+   ======================================================================= */
+const P = new URLSearchParams(location.search);
+const NAME = (P.get('name')||'').slice(0,12);
+const BAITS = {
+  gift:   {gift:'🎁', title:'선물이 도착했어요!', desc:'친구가 보낸 깜짝 선물이에요.<br>아래 버튼을 눌러 확인하세요 👇', btn:'선물 열기'},
+  gifticon:{gift:'☕', title:'기프티콘 당첨!', desc:'스타벅스 아메리카노 교환권에 당첨됐어요.<br>눌러서 받아 가세요 👇', btn:'받기'},
+  photo:  {gift:'📸', title:'너 사진 떴던데?', desc:'누가 너 사진 올렸더라...<br>눌러서 확인해 봐 👇', btn:'사진 보기'},
+  money:  {gift:'💸', title:'5만원 입금 완료', desc:'누가 너한테 돈 보냈어!<br>눌러서 확인 👇', btn:'확인하기'},
+};
+const bait = BAITS[P.get('bait')] || BAITS.gift;
+document.getElementById('baitTitle').textContent = bait.title;
+document.getElementById('baitDesc').innerHTML = bait.desc;
+document.querySelector('#bait .gift').textContent = bait.gift;
+document.getElementById('openBtn').textContent = bait.btn;
+
+/* ---------- 매트릭스 배경 ---------- */
+(function matrix(){
+  const cv=document.getElementById('matrix'), g=cv.getContext('2d');
+  let cols, drops, fs=14;
+  function resize(){ cv.width=innerWidth; cv.height=innerHeight; cols=Math.floor(cv.width/fs); drops=Array(cols).fill(0).map(()=>Math.random()*cv.height/fs); }
+  resize(); addEventListener('resize',resize);
+  const chars='アカサタナ0123456789ABCDEF<>/{}$#*';
+  setInterval(()=>{ g.fillStyle='rgba(0,0,0,.08)'; g.fillRect(0,0,cv.width,cv.height);
+    g.fillStyle='#0f8f3a'; g.font=fs+'px monospace';
+    for(let i=0;i<cols;i++){ const t=chars[Math.floor(Math.random()*chars.length)]; g.fillText(t,i*fs,drops[i]*fs);
+      if(drops[i]*fs>cv.height && Math.random()>.975) drops[i]=0; drops[i]++; } },55);
+})();
+
+/* ---------- 효과: 진동 + 비프음 ---------- */
+let AC=null;
+function beep(freq=440,dur=.08,type='square',vol=.05){ try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); const o=AC.createOscillator(),g=AC.createGain(); o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+dur);}catch(e){} }
+function buzz(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
+
+/* ---------- 가짜 데이터 (전부 랜덤, 의미 없음) ---------- */
+const rip=()=>`${r(10,250)}.${r(0,255)}.${r(0,255)}.${r(1,254)}`;
+const r=(a,b)=>Math.floor(a+Math.random()*(b-a+1));
+const cities=['Seoul, KR','Busan, KR','Incheon, KR','Daejeon, KR','Tokyo, JP'];
+const devices=['iPhone 15 Pro','Galaxy S24','iPhone 14','Galaxy Z Flip','Pixel 8'];
+const files=['photos_2024.zip','kakao_backup.db','contacts.vcf','notes.txt','가족사진.jpg','비밀번호.xlsx','셀카_192장.zip','학교과제.hwp'];
+
+const show = id => document.querySelectorAll('.layer').forEach(l=>l.classList.toggle('on', l.id===id));
+const term = document.getElementById('term');
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+function line(html, cls){ const d=document.createElement('div'); if(cls)d.className=cls; d.innerHTML=html; term.appendChild(d);
+  while(term.children.length>22) term.removeChild(term.firstChild); term.scrollTop=term.scrollHeight; return d; }
+async function type(text, cls, speed=18){ const d=line('',cls); for(const ch of text){ d.textContent+=ch; if(ch!==' ')beep(180+Math.random()*60,.012,'square',.02); await sleep(speed); } return d; }
+async function bar(label, ms){ line(label,'dim'); const wrap=document.createElement('div'); wrap.className='prog'; const i=document.createElement('i'); wrap.appendChild(i); term.appendChild(wrap); term.scrollTop=term.scrollHeight;
+  const steps=28; for(let s=1;s<=steps;s++){ i.style.width=(s/steps*100)+'%'; if(s%6===0)beep(90,.02,'sawtooth',.03); await sleep(ms/steps); } }
+
+let running=false, aborted=false;
+async function runHack(){
+  if(running) return; running=true; aborted=false;
+  show('hack'); term.innerHTML='';
+  const ip=rip(), city=cities[r(0,cities.length-1)], dev=devices[r(0,devices.length-1)];
+  document.getElementById('barL').textContent='SYSTEM://'+ip;
+  const seq = async()=>{
+    await type('$ initiating remote connection...', 'dim', 12);
+    await type('> target device: '+dev, 'white', 10);
+    await type('> locating IP address...', 'dim', 12);
+    await sleep(200); await type('  ✓ '+ip+'  ['+city+']', 'ok', 8); buzz(40);
+    await type('> bypassing firewall', 'dim', 12); await bar('  cracking security layer', 1400); buzz([30,40,30]);
+    await type('  ✓ ACCESS to device granted', 'ok', 8);
+    await sleep(150);
+    await type('> scanning storage...', 'dim', 12);
+    for(let k=0;k<4;k++){ const f=files[r(0,files.length-1)]; await type('  found: '+f+'  ('+r(1,320)+' MB)', 'white', 6); beep(300,.03,'square',.04); await sleep(90); }
+    await bar('  downloading files', 1600); buzz([50,60,50,60]);
+    await type('> accessing camera...', 'warn', 14); await sleep(400); await type('  ✓ front camera online', 'warn', 8); buzz(80);
+    await type('> reading messages & contacts...', 'warn', 14); await bar('  extracting data', 1500);
+    await type('> uploading everything to server', 'warn', 12); await bar('  upload', 1700); buzz([60,40,60,40,120]);
+    await type('  ✓ COMPLETE. you have been hacked.', 'warn', 10);
+  };
+  await seq();
+  if(aborted) return;
+  // 경보
+  const al=document.getElementById('alarm'); al.classList.add('on','show');
+  let flashes=0; const fl=setInterval(()=>{ al.classList.toggle('flash'); beep(flashes%2?880:440,.12,'square',.07); buzz(90); if(++flashes>8){ clearInterval(fl); al.classList.remove('flash'); } },260);
+  buzz([200,100,200,100,400]);
+  await sleep(2400);
+  al.classList.remove('on','show');
+  // 반전!
+  document.getElementById('revealTitle').textContent = NAME ? NAME+'아, 속았지?!' : '속았지?!';
+  for(let i=0;i<3;i++){ beep(520+i*120,.1,'sine',.08); await sleep(110); }
+  buzz(300);
+  show('reveal'); running=false;
+}
+
+/* ---------- 버튼 ---------- */
+document.getElementById('openBtn').onclick = ()=>{ try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){} runHack(); };
+document.getElementById('againBtn').onclick = ()=>runHack();
+document.getElementById('shareBtn').onclick = async ()=>{
+  const url=location.href;
+  try{ if(navigator.share){ await navigator.share({title:'이거 봐봐 ㅋㅋ', text:bait.title, url}); return; } }catch(e){}
+  try{ await navigator.clipboard.writeText(url); alert('링크를 복사했어요! 친구에게 붙여넣어 보내세요 😈'); }
+  catch(e){ prompt('이 링크를 복사해서 보내세요:', url); }
+};
+document.getElementById('setupBtn').onclick = ()=>{
+  const nm=prompt('골탕 먹일 친구 이름 (반전에 "○○아 속았지" 로 나와요). 비우면 생략:', NAME)||'';
+  const bt=prompt('미끼 종류 — gift(선물) / gifticon(기프티콘) / photo(네 사진) / money(입금) 중 하나:', P.get('bait')||'gift')||'gift';
+  const q=new URLSearchParams(); if(nm.trim())q.set('name',nm.trim().slice(0,12)); q.set('bait',bt.trim());
+  location.search='?'+q.toString();
+};
+</script>
+</body>
+</html>
